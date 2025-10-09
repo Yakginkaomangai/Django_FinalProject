@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+      <div class="card shadow-sm">
+        <div class="card-body p-5">
+          <h3 class="mb-4">Edit Profile</h3>
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="id_first_name" class="form-label">First Name</label>
+              {{ form.first_name }}
+              {{ form.first_name.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label for="id_last_name" class="form-label">Last Name</label>
+              {{ form.last_name }}
+              {{ form.last_name.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label for="id_email" class="form-label">Email</label>
+              {{ form.email }}
+              {{ form.email.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label for="id_username" class="form-label">Username</label>
+              {{ form.username }}
+              {{ form.username.errors }}
+            </div>
+
+            <div class="mb-3">
+              <small class="text-muted">Leave blank if you don’t want to change password.</small> <br>
+              <label for="id_password" class="form-label">Password</label>
+              {{ form.password }}
+              {{ form.password.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label for="id_confirm_password" class="form-label">Confirm Password</label>
+              {{ form.confirm_password }}
+              {{ form.confirm_password.errors }}
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-lg">Back</a>
+              <button type="submit" class="btn btn-success btn-lg">Save Changes</button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

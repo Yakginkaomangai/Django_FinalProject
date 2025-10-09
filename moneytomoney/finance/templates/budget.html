@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="col-lg-6 col-md-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="mb-4">{{ budget|default_if_none:"Set Budget" }}</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_month" class="form-label">Month</label>
+                        {{ form.month }}
+                        {{ form.month.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_amount" class="form-label">Amount</label>
+                        {{ form.amount }}
+                        {{ form.amount.errors }}
+                    </div>
+                    <button type="submit" class="btn btn-success">Save Budget</button>
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

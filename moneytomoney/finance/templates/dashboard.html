@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Dashboard</h1>
+    <div>
+        <a href="{% url 'tag_create' %}" class="btn btn-outline-primary me-2">Tag</a>
+        <a href="{% url 'category_create' %}" class="btn btn-outline-info me-2">Category</a>
+        <a href="{% url 'budget_create' %}" class="btn btn-outline-success">Set Budget</a>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="alert alert-info mb-4">
+    <strong>Total Income:</strong> {{ total_income }} |
+    <strong>Total Expense:</strong> {{ total_expense }} |
+    <strong>Remaining Budget:</strong> {{ remaining_budget }}
+  </div>
+
+  <!-- Search -->
+  <form method="get" class="mb-3 d-flex">
+    <input type="text" name="search" class="form-control me-2" placeholder="Search..." value="{{ search_query }}">
+    <button type="submit" class="btn btn-dark">Search</button>
+  </form>
+
+  <!-- Combined Table -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h4 class="card-title mb-3">Transactions</h4>
+      <table class="table table-bordered table-striped align-middle">
+        <thead class="table-success">
+          <tr>
+            <th>Type</th>
+            <th>Title / Source</th>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Payment Method</th>
+            <th>Tags</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for expense in expenses %}
+          <tr>
+            <td><span class="badge bg-danger">Expense</span></td>
+            <td>{{ expense.title }}</td>
+            <td>-{{ expense.amount }}</td>
+            <td>{{ expense.date }}</td>
+            <td>{{ expense.category.name }}</td>
+            <td>{{ expense.payment_method.method }}</td>
+            <td>
+              {% for tag in expense.tags.all %}
+                <span class="badge bg-secondary">{{ tag.name }}</span>
+              {% empty %}
+                <span class="text-muted">—</span>
+              {% endfor %}
+            </td>
+            <td>
+              <a href="{% url 'expense_update' expense.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
+              <a href="{% url 'expense_delete' expense.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </td>
+          </tr>
+          {% endfor %}
+
+          {% for income in incomes %}
+          <tr>
+            <td><span class="badge bg-success">Income</span></td>
+            <td>{{ income.source }}</td>
+            <td>+{{ income.amount }}</td>
+            <td>{{ income.date }}</td>
+            <td>{{ income.category.name }}</td>
+            <td class="text-muted">—</td>
+            <td>
+              {% for tag in income.tags.all %}
+                <span class="badge bg-secondary">{{ tag.name }}</span>
+              {% empty %}
+                <span class="text-muted">—</span>
+              {% endfor %}
+            </td>
+            <td>
+              <a href="{% url 'income_update' income.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
+              <a href="{% url 'income_delete' income.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </td>
+          </tr>
+          {% endfor %}
+
+          {% if not expenses and not incomes %}
+          <tr>
+            <td colspan="7" class="text-center text-muted">No transactions yet.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      <div class="mt-3">
+        <a href="{% url 'expense_create' %}" class="btn btn-danger me-2">+ Add Expense</a>
+        <a href="{% url 'income_create' %}" class="btn btn-success">+ Add Income</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

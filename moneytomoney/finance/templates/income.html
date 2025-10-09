@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto">
+            <h1 class="mb-4">
+                {% if form.instance.pk %}
+                    Edit Income
+                {% else %}
+                    Add New Income
+                {% endif %}
+            </h1>
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="id_title" class="form-label">Title</label>
+                    {{ form.source }}
+                    {{ form.source.errors }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_amount" class="form-label">Amount</label>
+                    {{ form.amount }}
+                    {{ form.amount.errors }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_date" class="form-label">Date</label>
+                    {{ form.date }}
+                    {{ form.date.errors }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_category" class="form-label">Category</label>
+                    {{ form.category }}
+                    {{ form.category.errors }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_tags" class="form-label">Tags</label>
+                    {{ form.tags }}
+                    {{ form.tags.errors }}
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    {% if form.instance.pk %} Update {% else %} Save {% endif %}
+                </button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
