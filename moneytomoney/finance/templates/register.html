@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2 class="text-center">Register</h2>
+        <form method="POST" action="{% url 'register' %}">
+            {% csrf_token %}
+            {{ form.first_name.errors }}
+            <div class="mb-3">
+                <label for="first_name" class="form-label">Firstname</label>
+                <input type="text" class="form-control" id="first_name" name="first_name" required>
+            </div>
+            {{ form.last_name.errors }}
+            <div class="mb-3">
+                <label for="last_name" class="form-label">Lastname</label>
+                <input type="text" class="form-control" id="last_name" name="last_name" required>
+            </div>
+            {{ form.username.errors }}
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            {{ form.email.errors }}
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="text" class="form-control" id="email" name="email" required>
+            </div>
+            {{ form.password1.errors }}
+            <div class="mb-3">
+                <label for="password1" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password1" name="password1" required>
+            </div>
+            {{ form.password2.errors }}
+            <div class="mb-3">
+                <label for="password2" class="form-label">Confirm Password</label>
+                <input type="password" class="form-control" id="password2" name="password2" required>
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100">Register</button>
+
+            <div class="text-center mt-3">
+                <p>Already have an account? 
+                    <a href="{% url 'login' %}" class="btn btn-outline-success btn-sm ms-2">Login</a>
+                </p>
+            </div>
+            {% if messages %}
+                <div>
+                    {% for message in messages %}
+                        <p class="text-success">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

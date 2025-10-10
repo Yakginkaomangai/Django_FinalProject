@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body p-5">
+          <h2 class="mb-4">Change Password</h2>
+
+          <form method="POST">
+            {% csrf_token %}
+            {{ form.old_password.errors }}
+            <div class="mb-3">
+                <label for="old_password" class="form-label">Old Password</label>
+                <input type="password" class="form-control" id="old_password" name="old_password" required>
+            </div>
+            {{ form.new_password1.errors }}
+            <div class="mb-3">
+                <label for="new_password1" class="form-label">New Password</label>
+                <input type="password" class="form-control" id="new_password1" name="new_password1" required>
+            </div>
+            {{ form.new_password2.errors }}
+            <div class="mb-3">
+                <label for="new_password2" class="form-label">Confirm Password</label>
+                <input type="password" class="form-control" id="new_password2" name="new_password2" required>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'profile' %}" class="btn btn-secondary">Back</a>
+              <button type="submit" class="btn btn-success">Change Password</button>
+            </div>
+            <br>
+            <br>
+            {% if messages %}
+                <div>
+                    {% for message in messages %}
+                        <p class="text-danger">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

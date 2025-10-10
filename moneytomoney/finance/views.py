@@ -1,13 +1,14 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from .models import Expense, Income, Budget, Tag, Category
-from .forms import ExpenseForm, IncomeForm, BudgetForm, TagForm, ProfileForm, CategoryForm
+from .forms import *
 from django.views import View
 from django.db.models import Q
-from django.contrib.auth import logout, login
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import logout, login, update_session_auth_hash
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-
+from django.contrib import messages
+from datetime import *
 
 class Login(View):
     def get(self, request):
@@ -28,37 +29,94 @@ class Logout(LoginRequiredMixin, View):
     def get(self, request):
         logout(request)
         return redirect('login')
+
+class Register(View):
+    def get(self, request):
+        form = CustomUserCreationForm()
+        return render(request, 'register.html', {'form': form})
     
+    def post(self, request):
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Account created successfully')
+            return redirect('login')
+        return render(request, 'register.html', {'form': form})
+
+    
+class Home(LoginRequiredMixin, View):
+    def get(self, request):
+        selected_month = request.session.get('selected_month', '')
+        return render(request, 'home.html', {'selected_month': selected_month})
+
+    def post(self, request):
+        month = request.POST.get('month')
+        if month:
+            request.session['selected_month'] = month
+            return redirect(f"/dashboard/?month={month}")
+        return redirect('home')
+
+from django.db.models import Q
+from datetime import datetime
+from django.shortcuts import render, redirect
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 class Dashboard(LoginRequiredMixin, View):
     def get(self, request):
         query = request.GET
+        month_str = query.get("month") or request.session.get("selected_month")
+        if not month_str:
+            return redirect('home')
+        try:
+            selected_month = datetime.strptime(month_str, "%Y-%m")
+        except ValueError:
+            return redirect('home')
 
-        expenses = Expense.objects.filter(user=request.user).order_by('-date')
-        incomes = Income.objects.filter(user=request.user).order_by('-date')
-        budgets = Budget.objects.filter(user=request.user).order_by('-month')
+        request.session['selected_month'] = month_str
+
+        expenses = Expense.objects.filter(
+            user=request.user,
+            date__year=selected_month.year,
+            date__month=selected_month.month
+        ).order_by('-date')
+
+        incomes = Income.objects.filter(
+            user=request.user,
+            date__year=selected_month.year,
+            date__month=selected_month.month
+        ).order_by('-date')
+
+        budgets = Budget.objects.filter(
+            user=request.user,
+            month__year=selected_month.year,
+            month__month=selected_month.month
+        )
+
         tags = Tag.objects.all()
 
-        search = query.get("search")
-        if search:
-            expenses = expenses.filter(
-                Q(title__icontains=search) |
-                Q(category__name__icontains=search) |
-                Q(payment_method__method__icontains=search) |
-                Q(tags__name__icontains=search)
-            ).distinct()
-            incomes = incomes.filter(
-                Q(source__icontains=search)
-            )
-            budgets = budgets.filter(
-                Q(amount__icontains=search)
-            )
-            tags = tags.filter(name__icontains=search)
+        search = query.get("search", "")
+        a_filter = query.get("a_filter", "")  # field filter
 
+        if search:
+            if a_filter == "tags":
+                expenses = expenses.filter(tags__name__icontains=search).distinct()
+                incomes = incomes.filter(tags__name__icontains=search).distinct()
+                tags = tags.filter(name__icontains=search)
+            elif a_filter == "categories":
+                expenses = expenses.filter(category__name__icontains=search).distinct()
+                incomes = incomes.filter(category__name__icontains=search).distinct()
+            elif a_filter == "payment_method":
+                expenses = expenses.filter(payment_method__method__icontains=search).distinct()
+                incomes = Income.objects.none()
+            else:
+                expenses = expenses.filter(title__icontains=search).distinct()
+                incomes = incomes.filter(source__icontains=search).distinct()
 
         total_expense = sum(e.amount for e in expenses)
         total_income = sum(i.amount for i in incomes)
-        remaining_budget = sum(b.amount for b in budgets) - total_expense
+        total_budget = sum(b.amount for b in budgets)
+        remaining_budget = total_budget - total_expense
 
         context = {
             "expenses": expenses,
@@ -68,10 +126,14 @@ class Dashboard(LoginRequiredMixin, View):
             "total_expense": total_expense,
             "total_income": total_income,
             "remaining_budget": remaining_budget,
-            "search_query": search or "",
+            "search_query": search,
+            "filter": a_filter,
+            "selected_month": selected_month.strftime("%B %Y"),
+            "month_str": month_str,
         }
-
         return render(request, "dashboard.html", context)
+
+
 
 class ExpenseCreate(LoginRequiredMixin, View):
     def get(self, request):
@@ -88,6 +150,7 @@ class ExpenseCreate(LoginRequiredMixin, View):
             return redirect('dashboard')
 
         return render(request, "expense.html", {"form": form})
+
 
 class ExpenseUpdate(LoginRequiredMixin, View):
     def get(self, request, expense_id):
@@ -134,6 +197,7 @@ class IncomeCreate(LoginRequiredMixin, View):
 
         return render(request, "income.html", {"form": form})
 
+
 class IncomeUpdate(LoginRequiredMixin, View):
     def get(self, request, income_id):
         income = Income.objects.get(pk=income_id)
@@ -154,6 +218,7 @@ class IncomeUpdate(LoginRequiredMixin, View):
             "form": form
         })
 
+
 class IncomeDelete(LoginRequiredMixin, View):
     def get(self, request, income_id):
         income = Income.objects.get(pk=income_id)
@@ -173,7 +238,6 @@ class BudgetCreateUpdate(LoginRequiredMixin, View):
             month = form.cleaned_data['month']
             amount = form.cleaned_data['amount']
 
-            # update หรือสร้าง budget ใหม่ถ้าไม่มี
             budget, created = Budget.objects.update_or_create(
                 user=request.user,
                 month=month,
@@ -182,9 +246,6 @@ class BudgetCreateUpdate(LoginRequiredMixin, View):
             return redirect('dashboard')
 
         return render(request, "budget.html", {"form": form})
-
-
-
 
 
 class TagCreate(LoginRequiredMixin, View):
@@ -228,12 +289,14 @@ class TagUpdate(LoginRequiredMixin, View):
             "form": form
         })
 
+
 class TagDelete(LoginRequiredMixin, View):
     def get(self, request, tag_id):
         tag = Tag.objects.get(pk=tag_id)
         tag.delete()
 
         return redirect("tag_create")
+
 
 class CategoryCreate(LoginRequiredMixin, View):
     def get(self, request):
@@ -250,9 +313,9 @@ class CategoryCreate(LoginRequiredMixin, View):
 
         if form.is_valid():
             category = form.save(commit=False)
-            category.user = request.user  # ผูกกับ user
+            category.user = request.user
             category.save()
-            return redirect('category_create')  # กลับมาหน้าเดิม
+            return redirect('category_create')
 
         return render(request, "category.html", {
             "form": form,
@@ -280,12 +343,14 @@ class CategoryUpdate(LoginRequiredMixin, View):
             "form": form
         })
 
+
 class CategoryDelete(LoginRequiredMixin, View):
     def get(self, request, category_id):
         category = Category.objects.get(pk=category_id)
         category.delete()
 
         return redirect('category_create')
+
 
 class ProfileUpdateView(LoginRequiredMixin, View):
     def get(self, request):
@@ -295,6 +360,22 @@ class ProfileUpdateView(LoginRequiredMixin, View):
     def post(self, request):
         form = ProfileForm(request.POST, instance=request.user)
         if form.is_valid():
-            form.save()  # Password จะถูกเข้ารหัสโดย set_password() ใน form
-            return redirect('dashboard')
+            form.save()
+            messages.success(request, 'Your profile was successfully updated!')
+            return redirect('profile')
         return render(request, 'profile.html', {'form': form})
+
+
+class ChangePassword(LoginRequiredMixin, View):
+    def get(self, request):
+        form = PasswordChangeForm(user=request.user)
+        return render(request, 'changepass.html', {"form": form})
+
+    def post(self, request):
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Your password was successfully updated!')
+            return redirect('profile')
+        return render(request, 'changepass.html', {'form': form})

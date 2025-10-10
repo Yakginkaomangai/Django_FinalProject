@@ -5,7 +5,7 @@
     <div class="col-lg-6 col-md-8 mx-auto">
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <h3 class="mb-4">{{ budget|default_if_none:"Set Budget" }}</h3>
+                <h3 class="mb-4">Set Budget</h3>
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">

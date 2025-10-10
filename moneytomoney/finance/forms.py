@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
 from .models import Expense, Income, Budget, Tag, Category, PaymentMethod
 from django.core.exceptions import ValidationError
-from datetime import datetime
+from datetime import *
 
 
 class ExpenseForm(forms.ModelForm):
@@ -70,20 +71,9 @@ class CategoryForm(forms.ModelForm):
         }
 
 class ProfileForm(forms.ModelForm):
-    password = forms.CharField(
-        label="Password",
-        widget=forms.PasswordInput(attrs={'class': 'form-control'},render_value=False),
-        required=False  # ไม่จำเป็นต้องกรอก
-    )
-    confirm_password = forms.CharField(
-        label="Confirm Password",
-        widget=forms.PasswordInput(attrs={'class': 'form-control'},render_value=False),
-        required=False  # ไม่จำเป็นต้องกรอก
-    )
-
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'username', 'password']
+        fields = ['first_name', 'last_name', 'email', 'username']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -91,16 +81,11 @@ class ProfileForm(forms.ModelForm):
             'username': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        password = self.cleaned_data.get('password')
+class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    first_name = forms.CharField(required=True)
+    last_name = forms.CharField(required=True)
 
-        if password:
-            user.set_password(password)
-        else:
-            old_password = User.objects.get(pk=user.pk).password
-            user.password = old_password
-
-        if commit:
-            user.save()
-        return user
+    class Meta:
+        model = User
+        fields = ("username", "first_name", "last_name", "email", "password1", "password2")

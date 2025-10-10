@@ -1,106 +1,143 @@
 {% extends 'base.html' %}
-{% load django_bootstrap5 %}
 
-{% block content %}
+{% block head %}
+
 <div class="container mt-4">
 
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Dashboard</h1>
+    <h1>MoneyToMoney</h1>
+    <form method="get" action="{% url 'dashboard' %}" class="flex gap-2 items-center bg-white rounded-xl p-3 w-full sm:w-auto">
+      <input type="month" name="month" value="{{ month_str }}" class="border rounded-md px-3 py-2 focus:ring-2 focus:ring-green-600" required>
+      <button type="submit" class="btn btn-dark px-4 py-2">Apply</button>
+    </form>
     <div>
-        <a href="{% url 'tag_create' %}" class="btn btn-outline-primary me-2">Tag</a>
-        <a href="{% url 'category_create' %}" class="btn btn-outline-info me-2">Category</a>
-        <a href="{% url 'budget_create' %}" class="btn btn-outline-success">Set Budget</a>
+        <a href="{% url 'tag_create' %}" class="btn btn-primary me-2">Tag</a>
+        <a href="{% url 'category_create' %}" class="btn btn-warning me-2">Category</a>
+        <a href="{% url 'budget_create' %}" class="btn btn-success">Set Budget</a>
     </div>
   </div>
+{% endblock %}
 
-  <!-- Summary -->
+
+{% block content %}
   <div class="alert alert-info mb-4">
-    <strong>Total Income:</strong> {{ total_income }} |
-    <strong>Total Expense:</strong> {{ total_expense }} |
+    <strong>Total Income:</strong> +{{ total_income }} |
+    <strong>Total Expense:</strong> -{{ total_expense }} |
     <strong>Remaining Budget:</strong> {{ remaining_budget }}
   </div>
 
-  <!-- Search -->
-  <form method="get" class="mb-3 d-flex">
-    <input type="text" name="search" class="form-control me-2" placeholder="Search..." value="{{ search_query }}">
-    <button type="submit" class="btn btn-dark">Search</button>
+  <form method="get" class="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
+
+    <div class="flex flex-col">
+      <label for="search" class="text-lg font-medium mb-1">Search</label>
+      <input
+        type="text"
+        name="search"
+        id="search"
+        class="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+        placeholder="Search transactions..."
+        value="{{ search_query|default:'' }}"
+      >
+      <button type="submit" class="btn btn-dark">Search</button>
+
+    </div>
+
+    <div>
+      <label class="text-lg font-medium">Filter by:</label>
+
+      <div>
+        <input type="radio" id="title" name="a_filter" value="title" {% if filter == "title" or not filter %}checked{% endif %}>
+        <label for="title">Title / Source</label>
+
+        <input type="radio" id="tags" name="a_filter" value="tags" {% if filter == "tags" %}checked{% endif %}>
+        <label for="tags">Tags</label>
+
+        <input type="radio" id="categories" name="a_filter" value="categories" {% if filter == "categories" %}checked{% endif %}>
+        <label for="categories">Categories</label>
+
+        <input type="radio" id="payment_method" name="a_filter" value="payment_method" {% if filter == "payment_method" %}checked{% endif %}>
+        <label for="payment_method">Payment Method</label>
+      </div>
+
+    </div>
+
   </form>
 
-  <!-- Combined Table -->
+
   <div class="card shadow-sm">
     <div class="card-body">
       <h4 class="card-title mb-3">Transactions</h4>
       <table class="table table-bordered table-striped align-middle">
         <thead class="table-success">
-          <tr>
-            <th>Type</th>
-            <th>Title / Source</th>
-            <th>Amount</th>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Payment Method</th>
-            <th>Tags</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for expense in expenses %}
-          <tr>
-            <td><span class="badge bg-danger">Expense</span></td>
-            <td>{{ expense.title }}</td>
-            <td>-{{ expense.amount }}</td>
-            <td>{{ expense.date }}</td>
-            <td>{{ expense.category.name }}</td>
-            <td>{{ expense.payment_method.method }}</td>
-            <td>
+        <tr>
+          <th class="px-4 py-3">Type</th>
+          <th class="px-4 py-3">Title / Source</th>
+          <th class="px-4 py-3">Amount</th>
+          <th class="px-4 py-3">Date</th>
+          <th class="px-4 py-3">Category</th>
+          <th class="px-4 py-3">Payment Method</th>
+          <th class="px-4 py-3">Tags</th>
+          <th class="px-4 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 text-sm">
+        {% for expense in expenses %}
+          <tr class="hover:bg-green-50 transition">
+            <td class="px-4 py-3"><span class="badge bg-danger">Expense</span></td>
+            <td class="px-4 py-3">{{ expense.title }}</td>
+            <td class="px-4 py-3 text-red-600 font-medium">-{{ expense.amount }}</td>
+            <td class="px-4 py-3">{{ expense.date }}</td>
+            <td class="px-4 py-3">{{ expense.category.name }}</td>
+            <td class="px-4 py-3">{{ expense.payment_method.method }}</td>
+            <td class="px-4 py-3">
               {% for tag in expense.tags.all %}
                 <span class="badge bg-secondary">{{ tag.name }}</span>
               {% empty %}
                 <span class="text-muted">—</span>
               {% endfor %}
             </td>
-            <td>
+            <td class="px-4 py-3 flex gap-2">
               <a href="{% url 'expense_update' expense.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
               <a href="{% url 'expense_delete' expense.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
             </td>
           </tr>
-          {% endfor %}
+        {% endfor %}
 
-          {% for income in incomes %}
-          <tr>
-            <td><span class="badge bg-success">Income</span></td>
-            <td>{{ income.source }}</td>
-            <td>+{{ income.amount }}</td>
-            <td>{{ income.date }}</td>
-            <td>{{ income.category.name }}</td>
-            <td class="text-muted">—</td>
-            <td>
+        {% for income in incomes %}
+          <tr class="hover:bg-green-50 transition">
+            <td class="px-4 py-3"><span class="badge bg-success">Income</span></td>
+            <td class="px-4 py-3">{{ income.source }}</td>
+            <td class="px-4 py-3 text-green-700 font-medium">+{{ income.amount }}</td>
+            <td class="px-4 py-3">{{ income.date }}</td>
+            <td class="px-4 py-3">{{ income.category.name }}</td>
+            <td class="px-4 py-3 text-gray-400">—</td>
+            <td class="px-4 py-3">
               {% for tag in income.tags.all %}
                 <span class="badge bg-secondary">{{ tag.name }}</span>
               {% empty %}
                 <span class="text-muted">—</span>
               {% endfor %}
             </td>
-            <td>
+            <td class="px-4 py-3 flex gap-2">
               <a href="{% url 'income_update' income.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
               <a href="{% url 'income_delete' income.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
             </td>
           </tr>
-          {% endfor %}
+        {% endfor %}
 
-          {% if not expenses and not incomes %}
+        {% if not expenses and not incomes %}
           <tr>
-            <td colspan="7" class="text-center text-muted">No transactions yet.</td>
+            <td colspan="8" class="text-center text-gray-400 px-4 py-6">No transactions yet.</td>
           </tr>
-          {% endif %}
-        </tbody>
-      </table>
-
-      <div class="mt-3">
-        <a href="{% url 'expense_create' %}" class="btn btn-danger me-2">+ Add Expense</a>
-        <a href="{% url 'income_create' %}" class="btn btn-success">+ Add Income</a>
-      </div>
-    </div>
+        {% endif %}
+      </tbody>
+    </table>
   </div>
-</div>
+
+  <!-- Add Buttons -->
+  <div class="flex flex-wrap gap-3 mt-6">
+    <a href="{% url 'expense_create' %}" class="btn btn-danger">+ Add Expense</a>
+    <a href="{% url 'income_create' %}" class="btn btn-success">+ Add Income</a>
+  </div>
 {% endblock %}
+

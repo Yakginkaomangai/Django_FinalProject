@@ -27,7 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-LOGIN_URL = '/finance/login/'
+LOGIN_URL = '/login/'
 
 
 # Application definition
