@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
 
+{% block title %}Tag{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-lg-6 col-md-8">
             <div class="card shadow-sm mb-4">
                 <div class="card-body p-4">
-                    <h3 class="mb-4">
-                        Add Tag
-                    </h3>
+                    <h3 class="mb-4">Add Tag</h3>
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
@@ -43,11 +43,7 @@
                                     <td>{{ tag.name }}</td>
                                     <td class="px-4 py-3 flex gap-2">
                                         <a href="{% url 'tag_update' tag.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
-                                        <a href="{% url 'tag_delete' tag.id %}" 
-                                            class="btn btn-sm btn-outline-danger delete-btn"
-                                            data-name="{{ tag.source }}">
-                                            Delete
-                                        </a>
+                                        <a href="{% url 'tag_delete' tag.id %}" class="btn btn-sm btn-outline-danger delete-btn" data-name="{{ tag.name }}">Delete</a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -64,7 +60,7 @@
 {% endblock %}
 
 {% block script %} 
-    <script>
+<script>
     document.querySelectorAll('.delete-btn').forEach(function(btn){
         btn.addEventListener('click', function(e){
             e.preventDefault();
@@ -87,5 +83,5 @@
             });
         });
     });
-    </script>
+</script>
 {% endblock %}

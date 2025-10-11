@@ -5,11 +5,10 @@ from .forms import *
 from django.views import View
 from django.db.models import *
 from django.contrib.auth import logout, login, update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from datetime import *
-from openpyxl import Workbook # type: ignore
+from openpyxl import Workbook
 from django.http import HttpResponse
 
 class Login(View):
@@ -434,11 +433,11 @@ class ProfileUpdateView(LoginRequiredMixin, View):
 
 class ChangePassword(LoginRequiredMixin, View):
     def get(self, request):
-        form = PasswordChangeForm(user=request.user)
+        form = ChangepassForm(user=request.user)
         return render(request, 'changepass.html', {"form": form})
 
     def post(self, request):
-        form = PasswordChangeForm(user=request.user, data=request.POST)
+        form = ChangepassForm(user=request.user, data=request.POST)
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)

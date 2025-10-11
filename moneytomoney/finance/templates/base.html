@@ -18,9 +18,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-success p-3">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}" style="color: rgba(255, 255, 255, 1);">
-                MoneyToMoney
-            </a>
+            <a class="navbar-brand text-white" href="{% url 'home' %}">MoneyToMoney</a>
 
             <div class="d-flex ms-auto">
                 {% if user.is_authenticated %}

@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User, Group
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.contrib.auth import authenticate
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm
 from .models import Expense, Income, Budget, Tag, Category, PaymentMethod
 from django.core.exceptions import ValidationError
 from datetime import date
@@ -167,12 +166,12 @@ class CategoryForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'username']
+        fields = ['username', 'first_name', 'last_name', 'email']
         widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
     def clean_email(self):
@@ -186,3 +185,18 @@ class ProfileForm(forms.ModelForm):
         if User.objects.filter(username__iexact=username).exclude(pk=self.instance.pk).exists():
             raise ValidationError("This username is already taken.")
         return username
+
+
+class ChangepassForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'Old password'})
+    )
+    new_password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'New password'}),
+        strip=False
+    )
+    
+    new_password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'Confirm password'}),
+        strip=False
+    )

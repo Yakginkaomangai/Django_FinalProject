@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% block title %}Home{% endblock %}
+
 {% block content %}
 <div class="container mt-5 text-center">
   <h1 class="mb-4 fw-bold text-success">Welcome to MoneyToMoney</h1>
@@ -7,13 +9,7 @@
 
   <form method="post" action="{% url 'home' %}" class="d-flex flex-column align-items-center gap-3">
     {% csrf_token %}
-    <input 
-      type="month" 
-      name="month" 
-      class="form-control form-control-lg w-auto" 
-      value="{{ selected_month }}" 
-      required
-    >
+    <input type="month" name="month" class="form-control form-control-lg w-auto" value="{{ selected_month }}" required>
     <button type="submit" class="btn btn-dark px-5 py-3">Go to Dashboard</button>
   </form>
 
@@ -26,9 +22,7 @@
 
   <div class="mt-4">
     {% if is_premium %}
-    <a href="{% url 'download_annual_report' %}" class="btn btn-link px-5 py-3 ">
-      Download Annual Report (.xlsx)
-    </a>
+    <a href="{% url 'download_annual_report' %}" class="btn btn-link px-5 py-3 ">Download Annual Report (.xlsx)</a>
     {% endif %}
   </div>
 </div>
@@ -36,45 +30,45 @@
 
 {% block script%}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const chartData = JSON.parse(document.getElementById('annualChartData').textContent);
-  const ctx = document.getElementById('annualChart').getContext('2d');
+  document.addEventListener('DOMContentLoaded', function() {
+    const chartData = JSON.parse(document.getElementById('annualChartData').textContent);
+    const ctx = document.getElementById('annualChart').getContext('2d');
 
-  new Chart(ctx, {
-      type: 'bar',
-      data: {
-          labels: chartData.labels,
-          datasets: [
-              {
-                  label: 'Income',
-                  data: chartData.incomes,
-                  backgroundColor: 'rgba(40, 167, 69, 0.7)',
-                  borderColor: 'rgba(40, 167, 69, 1)',
-                  borderWidth: 1
-              },
-              {
-                  label: 'Expense',
-                  data: chartData.expenses,
-                  backgroundColor: 'rgba(220, 53, 69, 0.7)',
-                  borderColor: 'rgba(220, 53, 69, 1)',
-                  borderWidth: 1
-              }
-          ]
-      },
-      options: {
-          responsive: true,
-          plugins: {
-              legend: { position: 'top' },
-              title: { display: true, text: 'Annual Income vs Expense' }
-          },
-          scales: {
-              y: {
-                  beginAtZero: true,
-                  title: { display: true, text: 'Amount (THB)' }
-              }
-          }
-      }
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: chartData.incomes,
+                    backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Expense',
+                    data: chartData.expenses,
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: true, text: 'Annual Income vs Expense' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Amount (THB)' }
+                }
+            }
+        }
+    });
   });
-});
 </script>
 {% endblock%}
