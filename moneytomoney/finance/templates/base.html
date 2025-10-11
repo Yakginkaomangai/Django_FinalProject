@@ -7,8 +7,10 @@
     {% load django_bootstrap5 %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        .errors {
+        ul.errorlist {
             color: red;
         }
     </style>
@@ -30,10 +32,10 @@
     </nav>
 
     <div class="container py-4">
-        
         {% block head %} {% endblock %}
 
         {% block content %} {% endblock %}
     </div>
 </body>
+        {% block script %} {% endblock %}
 </html>

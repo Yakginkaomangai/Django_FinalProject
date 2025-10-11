@@ -9,17 +9,20 @@
         <form method="POST" action="{% url 'login' %}">
             {% csrf_token %}
 
-            {{ form.username.errors }}
-            <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" name="username" required>
-            </div>
+            {% if form.non_field_errors %}
+                <div class="mb-3">
+                    {% for error in form.non_field_errors %}
+                        <div class="text-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
-            {{ form.password.errors }}
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" name="password" required>
-            </div>
+            {% for field in form %}
+                <div class="mb-3">
+                    {{ field.label_tag }}
+                    {{ field }}
+                </div>
+            {% endfor %}
 
             <button type="submit" class="btn btn-dark w-100">Login</button>
 

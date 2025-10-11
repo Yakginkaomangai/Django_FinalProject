@@ -30,15 +30,6 @@
               <a href="{% url 'profile' %}" class="btn btn-secondary">Back</a>
               <button type="submit" class="btn btn-success">Change Password</button>
             </div>
-            <br>
-            <br>
-            {% if messages %}
-                <div>
-                    {% for message in messages %}
-                        <p class="text-danger">{{ message }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
 
           </form>
         </div>

@@ -17,8 +17,8 @@
                             {{ form.name.errors }}
                         </div>
                         <div class="d-flex justify-content-between">
-                            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back To Dashboard</a>
-                            <button type="submit" class="btn btn-success">Save</button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back</a>
+                            <button type="submit" class="btn btn-success">Add</button>
                         </div>
                     </form>
                 </div>
@@ -29,7 +29,7 @@
                     <h4 class="mb-3">Categories</h4>
                     {% if categories %}
                         <table class="table table-bordered table-striped align-middle">
-                            <thead class="table-success">
+                            <thead class="table-dark">
                                 <tr>
                                     <th>#</th>
                                     <th>Category Name</th>
@@ -41,9 +41,13 @@
                                 <tr>
                                     <td>{{ forloop.counter }}</td>
                                     <td>{{ category.name }}</td>
-                                    <td>
+                                    <td class="px-4 py-3 flex gap-2">
                                         <a href="{% url 'category_update' category.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
-                                        <a href="{% url 'category_delete' category.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                                        <a href="{% url 'category_delete' category.id %}" 
+                                            class="btn btn-sm btn-outline-danger delete-btn"
+                                            data-name="{{ category.source }}">
+                                            Delete
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -57,4 +61,31 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block script %} 
+    <script>
+    document.querySelectorAll('.delete-btn').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+            e.preventDefault();
+            const url = btn.getAttribute('href');
+            const name = btn.getAttribute('data-name') || 'this item';
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `Do you really want to delete "${name}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if(result.isConfirmed){
+                    window.location.href = url;
+                }
+            });
+        });
+    });
+    </script>
 {% endblock %}

@@ -6,29 +6,40 @@
 
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>MoneyToMoney</h1>
+    
     <form method="get" action="{% url 'dashboard' %}" class="flex gap-2 items-center bg-white rounded-xl p-3 w-full sm:w-auto">
-      <input type="month" name="month" value="{{ month_str }}" class="border rounded-md px-3 py-2 focus:ring-2 focus:ring-green-600" required>
+      <input type="month" name="month" value="{{ month_str }}" class="form-control-lg w-auto" required>
       <button type="submit" class="btn btn-dark px-4 py-2">Apply</button>
     </form>
+
     <div>
         <a href="{% url 'tag_create' %}" class="btn btn-primary me-2">Tag</a>
-        <a href="{% url 'category_create' %}" class="btn btn-warning me-2">Category</a>
-        <a href="{% url 'budget_create' %}" class="btn btn-success">Set Budget</a>
+        {% if is_premium %}
+          <a href="{% url 'category_create' %}" class="btn btn-secondary me-2">Category</a>
+        {% endif %}
+        <a href="{% url 'budget_create' %}" class="btn btn-warning">Set Budget</a>
     </div>
+
   </div>
 {% endblock %}
 
 
 {% block content %}
-  <div class="alert alert-info mb-4">
-    <strong>Total Income:</strong> +{{ total_income }} |
-    <strong>Total Expense:</strong> -{{ total_expense }} |
-    <strong>Remaining Budget:</strong> {{ remaining_budget }}
+  <div class="d-flex justify-content-left gap-3 mb-4">
+    <div class="p-3 bg-success text-white rounded ">
+      <strong>Total Income:</strong> +{{ total_income }}
+    </div>
+    <div class="p-3 bg-danger text-white rounded ">
+      <strong>Total Expense:</strong> -{{ total_expense }}
+    </div>
+    <div class="p-3 bg-warning text-white rounded ">
+      <strong>Remaining Budget:</strong> {{ remaining_budget }}
+    </div>
   </div>
 
-  <form method="get" class="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
-
-    <div class="flex flex-col">
+  <div class="d-flex justify-content-start gap-3 mb-4">
+  <form method="get">
+    <div>
       <label for="search" class="text-lg font-medium mb-1">Search</label>
       <input
         type="text"
@@ -38,14 +49,14 @@
         placeholder="Search transactions..."
         value="{{ search_query|default:'' }}"
       >
-      <button type="submit" class="btn btn-dark">Search</button>
+      <button type="submit" class="btn btn-secondary">Search</button>
 
     </div>
 
     <div>
-      <label class="text-lg font-medium">Filter by:</label>
-
       <div>
+        <label class="text-lg font-medium">Filter by:</label>
+
         <input type="radio" id="title" name="a_filter" value="title" {% if filter == "title" or not filter %}checked{% endif %}>
         <label for="title">Title / Source</label>
 
@@ -62,19 +73,21 @@
     </div>
 
   </form>
-
+  </div>
 
   <div class="card shadow-sm">
     <div class="card-body">
       <h4 class="card-title mb-3">Transactions</h4>
       <table class="table table-bordered table-striped align-middle">
-        <thead class="table-success">
+        <thead class="table-dark">
         <tr>
           <th class="px-4 py-3">Type</th>
           <th class="px-4 py-3">Title / Source</th>
           <th class="px-4 py-3">Amount</th>
           <th class="px-4 py-3">Date</th>
+          {% if is_premium %}
           <th class="px-4 py-3">Category</th>
+          {% endif %}
           <th class="px-4 py-3">Payment Method</th>
           <th class="px-4 py-3">Tags</th>
           <th class="px-4 py-3">Actions</th>
@@ -87,18 +100,24 @@
             <td class="px-4 py-3">{{ expense.title }}</td>
             <td class="px-4 py-3 text-red-600 font-medium">-{{ expense.amount }}</td>
             <td class="px-4 py-3">{{ expense.date }}</td>
+            {% if is_premium %}
             <td class="px-4 py-3">{{ expense.category.name }}</td>
+            {% endif %}
             <td class="px-4 py-3">{{ expense.payment_method.method }}</td>
             <td class="px-4 py-3">
               {% for tag in expense.tags.all %}
-                <span class="badge bg-secondary">{{ tag.name }}</span>
+                <span class="badge bg-primary">{{ tag.name }}</span>
               {% empty %}
                 <span class="text-muted">—</span>
               {% endfor %}
             </td>
             <td class="px-4 py-3 flex gap-2">
               <a href="{% url 'expense_update' expense.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
-              <a href="{% url 'expense_delete' expense.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              <a href="{% url 'expense_delete' expense.id %}" 
+                class="btn btn-sm btn-outline-danger delete-btn"
+                data-name="{{ expense.source }}">
+                Delete
+              </a>
             </td>
           </tr>
         {% endfor %}
@@ -109,18 +128,24 @@
             <td class="px-4 py-3">{{ income.source }}</td>
             <td class="px-4 py-3 text-green-700 font-medium">+{{ income.amount }}</td>
             <td class="px-4 py-3">{{ income.date }}</td>
+            {% if is_premium %}
             <td class="px-4 py-3">{{ income.category.name }}</td>
+            {% endif %}
             <td class="px-4 py-3 text-gray-400">—</td>
             <td class="px-4 py-3">
               {% for tag in income.tags.all %}
-                <span class="badge bg-secondary">{{ tag.name }}</span>
+                <span class="badge bg-primary">{{ tag.name }}</span>
               {% empty %}
                 <span class="text-muted">—</span>
               {% endfor %}
             </td>
             <td class="px-4 py-3 flex gap-2">
               <a href="{% url 'income_update' income.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
-              <a href="{% url 'income_delete' income.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              <a href="{% url 'income_delete' income.id %}" 
+                class="btn btn-sm btn-outline-danger delete-btn"
+                data-name="{{ income.source }}">
+                Delete
+              </a>
             </td>
           </tr>
         {% endfor %}
@@ -134,10 +159,35 @@
     </table>
   </div>
 
-  <!-- Add Buttons -->
-  <div class="flex flex-wrap gap-3 mt-6">
+  <div class="d-flex justify-content-center gap-3 mb-4">
     <a href="{% url 'expense_create' %}" class="btn btn-danger">+ Add Expense</a>
     <a href="{% url 'income_create' %}" class="btn btn-success">+ Add Income</a>
   </div>
 {% endblock %}
 
+{% block script %} 
+    <script>
+    document.querySelectorAll('.delete-btn').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+            e.preventDefault();
+            const url = btn.getAttribute('href');
+            const name = btn.getAttribute('data-name') || 'this item';
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `Do you really want to delete "${name}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if(result.isConfirmed){
+                    window.location.href = url;
+                }
+            });
+        });
+    });
+    </script>
+{% endblock %}

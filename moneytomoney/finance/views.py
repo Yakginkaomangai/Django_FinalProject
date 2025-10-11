@@ -1,22 +1,24 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from .models import Expense, Income, Budget, Tag, Category
 from .forms import *
 from django.views import View
-from django.db.models import Q
+from django.db.models import *
 from django.contrib.auth import logout, login, update_session_auth_hash
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from datetime import *
+from openpyxl import Workbook # type: ignore
+from django.http import HttpResponse
 
 class Login(View):
     def get(self, request):
-        form = AuthenticationForm()
+        form =  LoginForm()
         return render(request, 'login.html', {"form": form})
     
     def post(self, request):
-        form = AuthenticationForm(data=request.POST)
+        form = LoginForm(data=request.POST)
         if form.is_valid():
             user = form.get_user() 
             login(request,user)
@@ -32,22 +34,56 @@ class Logout(LoginRequiredMixin, View):
 
 class Register(View):
     def get(self, request):
-        form = CustomUserCreationForm()
+        form = RegisterForm()
         return render(request, 'register.html', {'form': form})
     
     def post(self, request):
-        form = CustomUserCreationForm(request.POST)
+        form = RegisterForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Account created successfully')
+            user = form.save(commit=False)
+            user.save()
+            
+            group = form.cleaned_data.get('package')
+            if group:
+                user.groups.add(group)
+            
+            messages.success(request, 'Account created successfully!')
             return redirect('login')
+        
         return render(request, 'register.html', {'form': form})
-
     
 class Home(LoginRequiredMixin, View):
     def get(self, request):
         selected_month = request.session.get('selected_month', '')
-        return render(request, 'home.html', {'selected_month': selected_month})
+        user = request.user
+        is_premium = user.groups.filter(name="premium").exists()
+        current_year = datetime.now().year
+
+        expenses = Expense.objects.filter(user=user, date__year=current_year)
+        incomes = Income.objects.filter(user=user, date__year=current_year)
+
+        labels = []
+        income_data = []
+        expense_data = []
+
+        for m in range(1, 13):
+            labels.append(datetime(current_year, m, 1).strftime("%b"))
+            income_data.append(sum(i.amount for i in incomes.filter(date__month=m)))
+            expense_data.append(sum(e.amount for e in expenses.filter(date__month=m)))
+
+        chart_data = {
+            "labels": labels,
+            "incomes": income_data,
+            "expenses": expense_data
+        }
+
+        context = {
+            'selected_month': selected_month,
+            'current_year': current_year,
+            'chart_data': chart_data,
+            'is_premium': is_premium,
+        }
+        return render(request, 'home.html', context)
 
     def post(self, request):
         month = request.POST.get('month')
@@ -56,15 +92,14 @@ class Home(LoginRequiredMixin, View):
             return redirect(f"/dashboard/?month={month}")
         return redirect('home')
 
-from django.db.models import Q
-from datetime import datetime
-from django.shortcuts import render, redirect
-from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin
 
-class Dashboard(LoginRequiredMixin, View):
+class Dashboard(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = ["finance.view_income", "finance.view_expense"]
+
     def get(self, request):
         query = request.GET
+        user = request.user
+        is_premium = user.groups.filter(name="premium").exists()
         month_str = query.get("month") or request.session.get("selected_month")
         if not month_str:
             return redirect('home')
@@ -96,7 +131,7 @@ class Dashboard(LoginRequiredMixin, View):
         tags = Tag.objects.all()
 
         search = query.get("search", "")
-        a_filter = query.get("a_filter", "")  # field filter
+        a_filter = query.get("a_filter", "")
 
         if search:
             if a_filter == "tags":
@@ -119,23 +154,25 @@ class Dashboard(LoginRequiredMixin, View):
         remaining_budget = total_budget - total_expense
 
         context = {
-            "expenses": expenses,
-            "incomes": incomes,
-            "budgets": budgets,
-            "tags": tags,
-            "total_expense": total_expense,
-            "total_income": total_income,
-            "remaining_budget": remaining_budget,
-            "search_query": search,
-            "filter": a_filter,
-            "selected_month": selected_month.strftime("%B %Y"),
-            "month_str": month_str,
+            'expenses': expenses,
+            'incomes': incomes,
+            'budgets': budgets,
+            'tags': tags,
+            'total_expense': total_expense,
+            'total_income': total_income,
+            'remaining_budget': remaining_budget,
+            'search_query': search,
+            'filter': a_filter,
+            'selected_month': selected_month.strftime('%B %Y'),
+            'month_str': month_str,
+            'is_premium': is_premium,
         }
         return render(request, "dashboard.html", context)
 
 
+class ExpenseCreate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.add_expense"
 
-class ExpenseCreate(LoginRequiredMixin, View):
     def get(self, request):
         form = ExpenseForm()
         return render(request, "expense.html", {"form": form})
@@ -152,7 +189,9 @@ class ExpenseCreate(LoginRequiredMixin, View):
         return render(request, "expense.html", {"form": form})
 
 
-class ExpenseUpdate(LoginRequiredMixin, View):
+class ExpenseUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.change_expense"
+
     def get(self, request, expense_id):
         expense = Expense.objects.get(pk=expense_id, user=request.user)
         form = ExpenseForm(instance=expense)
@@ -173,7 +212,9 @@ class ExpenseUpdate(LoginRequiredMixin, View):
         })
 
 
-class ExpenseDelete(LoginRequiredMixin, View):
+class ExpenseDelete(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.delete_expense"
+
     def get(self, request, expense_id):
         expense = Expense.objects.get(pk=expense_id)
         expense.delete()
@@ -181,7 +222,9 @@ class ExpenseDelete(LoginRequiredMixin, View):
         return redirect("dashboard")
 
 
-class IncomeCreate(LoginRequiredMixin, View):
+class IncomeCreate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.add_income"
+
     def get(self, request):
         form = IncomeForm()
         return render(request, "income.html", {"form": form})
@@ -198,7 +241,9 @@ class IncomeCreate(LoginRequiredMixin, View):
         return render(request, "income.html", {"form": form})
 
 
-class IncomeUpdate(LoginRequiredMixin, View):
+class IncomeUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.change_income"
+    
     def get(self, request, income_id):
         income = Income.objects.get(pk=income_id)
         form = IncomeForm(instance=income)
@@ -219,7 +264,9 @@ class IncomeUpdate(LoginRequiredMixin, View):
         })
 
 
-class IncomeDelete(LoginRequiredMixin, View):
+class IncomeDelete(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.delete_income"
+
     def get(self, request, income_id):
         income = Income.objects.get(pk=income_id)
         income.delete()
@@ -227,7 +274,9 @@ class IncomeDelete(LoginRequiredMixin, View):
         return redirect("dashboard")
 
 
-class BudgetCreateUpdate(LoginRequiredMixin, View):
+class BudgetCreateUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = ["finance.add_budget", "finance.change_budget"]
+
     def get(self, request):
         form = BudgetForm()
         return render(request, "budget.html", {"form": form})
@@ -248,7 +297,9 @@ class BudgetCreateUpdate(LoginRequiredMixin, View):
         return render(request, "budget.html", {"form": form})
 
 
-class TagCreate(LoginRequiredMixin, View):
+class TagCreate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = ["finance.view_tag", "finance.add_tag"]
+
     def get(self, request):
         form = TagForm()
         tags = Tag.objects.all()
@@ -259,17 +310,23 @@ class TagCreate(LoginRequiredMixin, View):
 
     def post(self, request):
         form = TagForm(request.POST)
+        tags = Tag.objects.all()
 
         if form.is_valid():
-            form.save()
+            tag = form.save(commit=False)
+            tag.user = request.user
+            tag.save()
             return redirect('tag_create')
 
         return render(request, "tag.html", {
-            "form": form
+            "form": form,
+            "tags": tags,
         })
 
 
-class TagUpdate(LoginRequiredMixin, View):
+class TagUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.change_tag"
+    
     def get(self, request, tag_id):
         tag = Tag.objects.get(pk=tag_id)
         form = TagForm(instance=tag)
@@ -290,7 +347,10 @@ class TagUpdate(LoginRequiredMixin, View):
         })
 
 
-class TagDelete(LoginRequiredMixin, View):
+
+class TagDelete(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.delete_tag"
+    
     def get(self, request, tag_id):
         tag = Tag.objects.get(pk=tag_id)
         tag.delete()
@@ -298,7 +358,9 @@ class TagDelete(LoginRequiredMixin, View):
         return redirect("tag_create")
 
 
-class CategoryCreate(LoginRequiredMixin, View):
+class CategoryCreate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = ["finance.view_category", "finance.add_category"]
+    
     def get(self, request):
         form = CategoryForm()
         categories = Category.objects.all()
@@ -323,7 +385,9 @@ class CategoryCreate(LoginRequiredMixin, View):
         })
 
 
-class CategoryUpdate(LoginRequiredMixin, View):
+class CategoryUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.change_category"
+
     def get(self, request, category_id):
         category = Category.objects.get(pk=category_id)
         form = CategoryForm(instance=category)
@@ -344,7 +408,9 @@ class CategoryUpdate(LoginRequiredMixin, View):
         })
 
 
-class CategoryDelete(LoginRequiredMixin, View):
+class CategoryDelete(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "finance.delete_category"
+    
     def get(self, request, category_id):
         category = Category.objects.get(pk=category_id)
         category.delete()
@@ -379,3 +445,42 @@ class ChangePassword(LoginRequiredMixin, View):
             messages.success(request, 'Your password was successfully updated!')
             return redirect('profile')
         return render(request, 'changepass.html', {'form': form})
+
+
+class DownloadAnnualReportView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        return self.request.user.groups.filter(name='premium').exists()
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        current_year = datetime.now().year
+
+        incomes = Income.objects.filter(user=user, date__year=current_year)
+        expenses = Expense.objects.filter(user=user, date__year=current_year)
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Annual Summary"
+
+        ws.append(["Month", "Total Income", "Total Expense", "Net Balance"])
+
+        for m in range(1, 13):
+            month_name = datetime(current_year, m, 1).strftime("%B")
+            total_income = sum(i.amount for i in incomes.filter(date__month=m))
+            total_expense = sum(e.amount for e in expenses.filter(date__month=m))
+            net = total_income - total_expense
+            ws.append([month_name, total_income, total_expense, net])
+
+        total_income_year = sum(i.amount for i in incomes)
+        total_expense_year = sum(e.amount for e in expenses)
+        ws.append(["", "", "", ""])
+        ws.append(["Total", total_income_year, total_expense_year, total_income_year - total_expense_year])
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        filename = f"annual_report_{current_year}.xlsx"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+        wb.save(response)
+        return response
