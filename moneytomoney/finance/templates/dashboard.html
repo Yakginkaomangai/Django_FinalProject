@@ -16,7 +16,7 @@
 
     <div>
         <a href="{% url 'tag_create' %}" class="btn btn-primary me-2">Tag</a>
-        {% if is_premium %}
+        {% if perms.finance.view_category %}
           <a href="{% url 'category_create' %}" class="btn btn-secondary me-2">Category</a>
         {% endif %}
         <a href="{% url 'budget_create' %}" class="btn btn-warning">Set Budget</a>
@@ -79,7 +79,7 @@
           <th class="px-4 py-3">Title / Source</th>
           <th class="px-4 py-3">Amount</th>
           <th class="px-4 py-3">Date</th>
-          {% if is_premium %}
+          {% if perms.finance.view_category %}
           <th class="px-4 py-3">Category</th>
           {% endif %}
           <th class="px-4 py-3">Payment Method</th>
@@ -94,7 +94,7 @@
             <td class="px-4 py-3">{{ expense.title }}</td>
             <td class="px-4 py-3 text-red-600 font-medium">-{{ expense.amount }}</td>
             <td class="px-4 py-3">{{ expense.date }}</td>
-            {% if is_premium %}
+            {% if perms.finance.view_category %}
             <td class="px-4 py-3">{{ expense.category.name }}</td>
             {% endif %}
             <td class="px-4 py-3">{{ expense.payment_method.method }}</td>
@@ -122,7 +122,7 @@
             <td class="px-4 py-3">{{ income.source }}</td>
             <td class="px-4 py-3 text-green-700 font-medium">+{{ income.amount }}</td>
             <td class="px-4 py-3">{{ income.date }}</td>
-            {% if is_premium %}
+            {% if perms.finance.view_category %}
             <td class="px-4 py-3">{{ income.category.name }}</td>
             {% endif %}
             <td class="px-4 py-3 text-gray-400">—</td>

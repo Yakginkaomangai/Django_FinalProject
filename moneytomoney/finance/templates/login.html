@@ -17,15 +17,8 @@
             <div class="mb-3">
               <label for="id_password" class="form-label">Password</label>
                 {{ form.password }}
+                {{form.non_field_errors}}
             </div>
-
-            {% if form.non_field_errors %}
-                <div class="mb-3">
-                    {% for error in form.non_field_errors %}
-                        <div class="text-danger">{{ error }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
 
             <button type="submit" class="btn btn-dark w-100">Login</button>
 

@@ -191,6 +191,7 @@ class ChangepassForm(PasswordChangeForm):
     old_password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'Old password'})
     )
+    
     new_password1 = forms.CharField(
         widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'New password'}),
         strip=False

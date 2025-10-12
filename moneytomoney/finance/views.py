@@ -97,8 +97,6 @@ class Dashboard(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def get(self, request):
         query = request.GET
-        user = request.user
-        is_premium = user.groups.filter(name="premium").exists()
         month_str = query.get("month") or request.session.get("selected_month")
         if not month_str:
             return redirect('home')
@@ -164,7 +162,6 @@ class Dashboard(LoginRequiredMixin, PermissionRequiredMixin, View):
             'filter': a_filter,
             'selected_month': selected_month.strftime('%B %Y'),
             'month_str': month_str,
-            'is_premium': is_premium,
         }
         return render(request, "dashboard.html", context)
 
