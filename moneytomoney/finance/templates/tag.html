@@ -42,8 +42,10 @@
                                     <td>{{ forloop.counter }}</td>
                                     <td>{{ tag.name }}</td>
                                     <td class="px-4 py-3 flex gap-2">
+                                        {% if request.user == tag.user  %}
                                         <a href="{% url 'tag_update' tag.id %}" class="btn btn-sm btn-outline-warning">Edit</a>
                                         <a href="{% url 'tag_delete' tag.id %}" class="btn btn-sm btn-outline-danger delete-btn" data-name="{{ tag.name }}">Delete</a>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}

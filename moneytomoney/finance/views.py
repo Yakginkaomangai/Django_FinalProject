@@ -6,6 +6,7 @@ from django.views import View
 from django.db.models import *
 from django.contrib.auth import logout, login, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
+from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from datetime import *
 from openpyxl import Workbook
@@ -31,6 +32,7 @@ class Logout(LoginRequiredMixin, View):
         logout(request)
         return redirect('login')
 
+
 class Register(View):
     def get(self, request):
         form = RegisterForm()
@@ -50,6 +52,7 @@ class Register(View):
             return redirect('login')
         
         return render(request, 'register.html', {'form': form})
+  
     
 class Home(LoginRequiredMixin, View):
     def get(self, request):
@@ -189,16 +192,19 @@ class ExpenseUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = "finance.change_expense"
 
     def get(self, request, expense_id):
-        expense = Expense.objects.get(pk=expense_id, user=request.user)
+        expense = Expense.objects.get(pk=expense_id)
+        if expense.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this expense.")
         form = ExpenseForm(instance=expense)
         return render(request, "expense.html", {
             "form": form,
         })
 
     def post(self, request, expense_id):
-        expense = Expense.objects.get(pk=expense_id, user=request.user)
+        expense = Expense.objects.get(pk=expense_id)
+        if expense.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this expense.")
         form = ExpenseForm(request.POST, instance=expense)
-
         if form.is_valid():
             form.save()
             return redirect('dashboard')
@@ -213,6 +219,8 @@ class ExpenseDelete(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def get(self, request, expense_id):
         expense = Expense.objects.get(pk=expense_id)
+        if expense.user != request.user:
+            raise PermissionDenied("You do not have permission to delete this expense.")
         expense.delete()
 
         return redirect("dashboard")
@@ -242,6 +250,8 @@ class IncomeUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
     
     def get(self, request, income_id):
         income = Income.objects.get(pk=income_id)
+        if income.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this income.")
         form = IncomeForm(instance=income)
         return render(request, "income.html", {
             "form": form,
@@ -249,8 +259,9 @@ class IncomeUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def post(self, request, income_id):
         income = Income.objects.get(pk=income_id)
+        if income.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this income.")
         form = IncomeForm(request.POST, instance=income)
-
         if form.is_valid():
             form.save()
             return redirect('dashboard')
@@ -265,6 +276,8 @@ class IncomeDelete(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def get(self, request, income_id):
         income = Income.objects.get(pk=income_id)
+        if income.user != request.user:
+            raise PermissionDenied("You do not have permission to delete this income.")
         income.delete()
 
         return redirect("dashboard")
@@ -325,6 +338,8 @@ class TagUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
     
     def get(self, request, tag_id):
         tag = Tag.objects.get(pk=tag_id)
+        if tag.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this tag.")
         form = TagForm(instance=tag)
         return render(request, "tagedit.html", {
             "form": form,
@@ -332,8 +347,9 @@ class TagUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def post(self, request, tag_id):
         tag = Tag.objects.get(pk=tag_id)
+        if tag.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this tag.")
         form = TagForm(request.POST, instance=tag)
-
         if form.is_valid():
             form.save()
             return redirect('tag_create')
@@ -349,6 +365,8 @@ class TagDelete(LoginRequiredMixin, PermissionRequiredMixin, View):
     
     def get(self, request, tag_id):
         tag = Tag.objects.get(pk=tag_id)
+        if tag.user != request.user:
+            raise PermissionDenied("You do not have permission to delete this tag.")
         tag.delete()
 
         return redirect("tag_create")
@@ -386,15 +404,19 @@ class CategoryUpdate(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def get(self, request, category_id):
         category = Category.objects.get(pk=category_id)
+        if category.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this category.")
         form = CategoryForm(instance=category)
+        
         return render(request, "categoryedit.html", {
             "form": form,
         })
 
     def post(self, request, category_id):
         category = Category.objects.get(pk=category_id)
+        if category.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this category.")
         form = CategoryForm(request.POST, instance=category)
-
         if form.is_valid():
             form.save()
             return redirect('category_create')
@@ -409,6 +431,8 @@ class CategoryDelete(LoginRequiredMixin, PermissionRequiredMixin, View):
     
     def get(self, request, category_id):
         category = Category.objects.get(pk=category_id)
+        if category.user != request.user:
+            raise PermissionDenied("You do not have permission to delete this category.")
         category.delete()
 
         return redirect('category_create')
@@ -458,19 +482,24 @@ class DownloadAnnualReportView(LoginRequiredMixin, UserPassesTestMixin, View):
         ws = wb.active
         ws.title = "Annual Summary"
 
-        ws.append(["Month", "Total Income", "Total Expense", "Net Balance"])
+        ws.append(["Month", "Category", "Total Income", "Total Expense", "Net Balance"])
+
+        categories = Category.objects.all()
 
         for m in range(1, 13):
             month_name = datetime(current_year, m, 1).strftime("%B")
-            total_income = sum(i.amount for i in incomes.filter(date__month=m))
-            total_expense = sum(e.amount for e in expenses.filter(date__month=m))
-            net = total_income - total_expense
-            ws.append([month_name, total_income, total_expense, net])
+            for cat in categories:
+                total_income = sum(i.amount for i in incomes.filter(date__month=m, category=cat))
+                total_expense = sum(e.amount for e in expenses.filter(date__month=m, category=cat))
+                net = total_income - total_expense
+
+                if total_income != 0 or total_expense != 0:
+                    ws.append([month_name, cat.name, total_income, total_expense, net])
 
         total_income_year = sum(i.amount for i in incomes)
         total_expense_year = sum(e.amount for e in expenses)
-        ws.append(["", "", "", ""])
-        ws.append(["Total", total_income_year, total_expense_year, total_income_year - total_expense_year])
+        ws.append(["", "", "", "", ""])
+        ws.append(["Total", "", total_income_year, total_expense_year, total_income_year - total_expense_year])
 
         response = HttpResponse(
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
