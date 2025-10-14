@@ -484,17 +484,24 @@ class DownloadAnnualReportView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         ws.append(["Month", "Category", "Total Income", "Total Expense", "Net Balance"])
 
-        categories = Category.objects.all()
+        categories = list(Category.objects.all()) + [None]
 
         for m in range(1, 13):
             month_name = datetime(current_year, m, 1).strftime("%B")
             for cat in categories:
-                total_income = sum(i.amount for i in incomes.filter(date__month=m, category=cat))
-                total_expense = sum(e.amount for e in expenses.filter(date__month=m, category=cat))
+                if cat is None:
+                    cat_name = "Uncategorized"
+                    total_income = sum(i.amount for i in incomes.filter(date__month=m, category__isnull=True))
+                    total_expense = sum(e.amount for e in expenses.filter(date__month=m, category__isnull=True))
+                else:
+                    cat_name = cat.name
+                    total_income = sum(i.amount for i in incomes.filter(date__month=m, category=cat))
+                    total_expense = sum(e.amount for e in expenses.filter(date__month=m, category=cat))
+
                 net = total_income - total_expense
 
                 if total_income != 0 or total_expense != 0:
-                    ws.append([month_name, cat.name, total_income, total_expense, net])
+                    ws.append([month_name, cat_name, total_income, total_expense, net])
 
         total_income_year = sum(i.amount for i in incomes)
         total_expense_year = sum(e.amount for e in expenses)
