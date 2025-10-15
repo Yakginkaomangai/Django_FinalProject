@@ -11,7 +11,6 @@ class LoginForm(AuthenticationForm):
     )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'Password'}),
-        strip=False
     )
 
 class RegisterForm(UserCreationForm):
@@ -194,10 +193,8 @@ class ChangepassForm(PasswordChangeForm):
     
     new_password1 = forms.CharField(
         widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'New password'}),
-        strip=False
     )
     
     new_password2 = forms.CharField(
         widget=forms.PasswordInput(attrs={'class':'form-control', 'placeholder':'Confirm password'}),
-        strip=False
     )
